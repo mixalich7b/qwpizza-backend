@@ -1,0 +1,7 @@
+{
+	"rootPath": "qwpizza-backend",
+	"heroku": {
+		"install": ["./..."],
+		"goVersion": "go1.7"
+	}
+}
