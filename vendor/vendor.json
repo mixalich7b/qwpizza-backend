@@ -12,6 +12,11 @@
 		"comment": "v1.0rc1-110-g4cc2de6",
 		"path": "github.com/gin-gonic/gin/binding",
 		"revision": "4cc2de6207f4128624cbdd16be30f64966c67c08"
+	}, {
+		"checksumSHA1": "/cPJSLLdEAWI/Mavbbe13RgSfP4=",
+		"comment": "v1.0rc1-110-g4cc2de6",
+		"path": "github.com/gin-gonic/gin/render",
+		"revision": "4cc2de6207f4128624cbdd16be30f64966c67c08"
 	}],
 	"heroku": {
 		"install": ["./..."],
