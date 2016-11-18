@@ -10,7 +10,12 @@ import (
 	"time"
 	"fmt"
 	"os"
+	"encoding/json"
+	"io/ioutil"
 )
+
+var storage map[string]string
+var shopId = "264131"
 
 type Order struct {
 	Products ProductStruct `json:"products"`
@@ -26,8 +31,26 @@ type BillStruct struct {
 	Phone string
 	Amount string
 	BillId string
+	BillStatus string
 	Comment string
 }
+
+type QWBillStructResponse struct {
+	Response QWBillStructResponseContainer `json:"response"`
+}
+
+type QWBillStructResponseContainer struct {
+	ResultCode int `json:"result_code"`
+	Bill QWBillStruct `json:"bill"`
+}
+
+type QWBillStruct struct {
+	Amount string `json:"amount"`
+	BillId string `json:"bill_id"`
+	BillStatus string `json:"status"`
+	Comment string `json:"comment"`
+}
+
 
 func CalculateOrder (order Order) string {
 
@@ -39,10 +62,35 @@ func CalculateOrder (order Order) string {
 	return strconv.Itoa(amount) + ".00"
 }
 
-func QWCreateBill (b BillStruct) int {
+func parseBillFromResponse(resp *http.Response, phone string) *BillStruct {
+	if resp.StatusCode == 200 {
+		body, err := ioutil.ReadAll(resp.Body)
+		if err != nil {
+			return nil
+		}
+		var billResponse QWBillStructResponse
+		err = json.Unmarshal(body, &billResponse)
+		if err != nil {
+			fmt.Println("cannot parse json, error:", err)
+			return nil
+		}
+
+		return &BillStruct{
+			Phone:phone,
+			Amount:billResponse.Response.Bill.Amount,
+			BillId:billResponse.Response.Bill.BillId,
+			BillStatus:billResponse.Response.Bill.BillStatus,
+			Comment:billResponse.Response.Bill.Comment,
+		}
+	} else {
+		return nil
+	}
+}
+
+func QWCreateBill (b BillStruct) *BillStruct {
 
 	apiUrl := "https://w.qiwi.com/"
-	resource := "api/v2/prv/264131/bills/" + b.BillId
+	resource := "api/v2/prv/" + shopId + "/bills/" + b.BillId
 	data := url.Values{}
 	user := "tel:+" + b.Phone
 
@@ -65,20 +113,33 @@ func QWCreateBill (b BillStruct) int {
 
 	resp, _ := client.Do(r)
 
-	//fmt.Println("url: ",urlStr)
-	//fmt.Println("data:",r.Body)
+	return parseBillFromResponse(resp, b.Phone)
+}
 
+func QWBillStatus (billId string, phone string) *BillStruct {
 
-	//respBytes := new(bytes.Buffer)
-	//respBytes.ReadFrom(resp.Body)
-	//fmt.Println("AUTH RESPONSE: ", string(respBytes.Bytes()))
+	apiUrl := "https://w.qiwi.com/"
+	resource := "api/v2/prv/" + shopId + "/bills/" + billId
+	data := url.Values{}
 
-	//fmt.Println(resp.StatusCode)
+	u, _ := url.ParseRequestURI(apiUrl)
+	u.Path = resource
+	urlStr := fmt.Sprintf("%v", u)
 
-	return resp.StatusCode
+	client := &http.Client{}
+	r, _ := http.NewRequest("GET", urlStr, nil)
+	r.Header.Add("Authorization", "Basic MTAxNjcxNjE6WHRJcDVGdEVKdXRKUlhLMWcwRmE=")
+	r.Header.Add("Content-Type", "application/x-www-form-urlencoded")
+	r.Header.Add("Content-Length", strconv.Itoa(len(data.Encode())))
+
+	resp, _ := client.Do(r)
+
+	return parseBillFromResponse(resp, phone)
 }
 
 func main() {
+	storage = make(map[string]string)
+
 	r := gin.Default()
 	r.POST("/order", func(c *gin.Context) {
 
@@ -87,17 +148,23 @@ func main() {
 		if c.BindJSON(&json) == nil {
 			BindJSON(c,&json)
 
+			phone := c.Request.Header.Get("Authorization")
 			newBill := BillStruct{
-				Phone:c.Request.Header.Get("Authorization"),
+				Phone:phone,
 				Amount:CalculateOrder(json),
 				BillId:"181116" + strconv.Itoa(int(time.Now().UnixNano() / int64(time.Millisecond))),
+				BillStatus:"",
 				Comment: json.Comment}
 
-			if QWCreateBill(newBill) == 200 {
+			createdBill := QWCreateBill(newBill)
+			if createdBill != nil {
+				storage[phone] = createdBill.BillId
 				c.JSON(200, gin.H{
-					"billId": newBill.BillId,
-					"shopId":"264131",
-					"amount":newBill.Amount})
+					"billId": createdBill.BillId,
+					"shopId":shopId,
+					"amount":createdBill.Amount,
+					"status":createdBill.BillStatus,
+					"comment":createdBill.Comment})
 			} else {
 				c.JSON(500, gin.H{
 					"error":"QW error"})
@@ -109,12 +176,25 @@ func main() {
 	})
 
 	r.GET("/status", func(c *gin.Context) {
-		c.JSON(200, gin.H{
-			"amount":"100.00",
-			"comment":"Двойные оливки",
-			"status":"paid"})
+		phone := c.Request.Header.Get("Authorization")
+		billId := storage[phone]
+		if billId == "" {
+			c.JSON(404, gin.H{
+				"error":"user not found"})
+		} else {
+			bill := QWBillStatus(billId, phone)
+			c.JSON(200, gin.H{
+				"billId": bill.BillId,
+				"shopId":shopId,
+				"amount":bill.Amount,
+				"status":bill.BillStatus,
+				"comment":bill.Comment})
+		}
 	})
 	port := os.Getenv("PORT")
+	if port == "" {
+		port = "8080"
+	}
 	r.Run(":" + port)
 }
 
