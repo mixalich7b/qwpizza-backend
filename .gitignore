@@ -22,3 +22,11 @@ _testmain.go
 *.exe
 *.test
 *.prof
+
+*.class
+*.iml
+*.DS_Store
+
+/target/*
+/.idea/*
+
