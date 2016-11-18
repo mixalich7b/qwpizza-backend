@@ -1,5 +1,18 @@
 {
 	"rootPath": "qwpizza-backend",
+	"comment": "",
+	"ignore": "test",
+	"package": [{
+		"checksumSHA1": "Qq7Gzany1n6gK6hpZQq9UXFhGGo=",
+		"comment": "v1.0rc1-110-g4cc2de6",
+		"path": "github.com/gin-gonic/gin",
+		"revision": "4cc2de6207f4128624cbdd16be30f64966c67c08"
+	}, {
+		"checksumSHA1": "M8Z61f8GZs6CO23wP+ekRgZEo+w=",
+		"comment": "v1.0rc1-110-g4cc2de6",
+		"path": "github.com/gin-gonic/gin/binding",
+		"revision": "4cc2de6207f4128624cbdd16be30f64966c67c08"
+	}],
 	"heroku": {
 		"install": ["./..."],
 		"goVersion": "go1.7"
