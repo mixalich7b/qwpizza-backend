@@ -113,7 +113,7 @@ func main() {
 			"comment":"Двойные оливки",
 			"status":"paid"})
 	})
-	r.Run(":3110")
+	r.Run(":80")
 }
 
 func BindJSON(c *gin.Context, obj interface{}) error {
