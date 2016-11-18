@@ -9,6 +9,7 @@ import (
 	"strconv"
 	"time"
 	"fmt"
+	"os"
 )
 
 type Order struct {
@@ -113,7 +114,8 @@ func main() {
 			"comment":"Двойные оливки",
 			"status":"paid"})
 	})
-	r.Run(":80")
+	port := os.Getenv("PORT")
+	r.Run(":" + port)
 }
 
 func BindJSON(c *gin.Context, obj interface{}) error {
