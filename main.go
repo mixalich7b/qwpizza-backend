@@ -89,7 +89,7 @@ func parseBillFromResponse(resp *http.Response, phone string) *BillStruct {
 
 func QWCreateBill (b BillStruct) *BillStruct {
 
-	apiUrl := "https://w.qiwi.com/"
+	apiUrl := "https://api.qiwi.com/"
 	resource := "api/v2/prv/" + shopId + "/bills/" + b.BillId
 	data := url.Values{}
 	user := "tel:+" + b.Phone
@@ -103,7 +103,7 @@ func QWCreateBill (b BillStruct) *BillStruct {
 
 	u, _ := url.ParseRequestURI(apiUrl)
 	u.Path = resource
-	urlStr := fmt.Sprintf("%v", u) // "https://api.com/user/"
+	urlStr := fmt.Sprintf("%v", u)
 
 	client := &http.Client{}
 	r, _ := http.NewRequest("PUT", urlStr, bytes.NewBufferString(data.Encode())) // <-- URL-encoded payload
@@ -118,7 +118,7 @@ func QWCreateBill (b BillStruct) *BillStruct {
 
 func QWBillStatus (billId string, phone string) *BillStruct {
 
-	apiUrl := "https://w.qiwi.com/"
+	apiUrl := "https://api.qiwi.com/"
 	resource := "api/v2/prv/" + shopId + "/bills/" + billId
 	data := url.Values{}
 
@@ -205,6 +205,3 @@ func BindJSON(c *gin.Context, obj interface{}) error {
 	}
 	return nil
 }
-
-
-//хранить ID счета чтобы по кошельку вытаскивать
